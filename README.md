@@ -32,15 +32,11 @@ This script installs:
 
 - Webmin
 
-- IP tables
-
 The script also creates the following:
 
 - A minimally privilaged user (pgadmin)
 
 - Disables root log in
-
-- Sets IP tables
 
 - Configures Webmin for managing PostgreSQL
 
