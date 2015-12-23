@@ -1,6 +1,8 @@
 #!/bin/bash -e
 #Version: 0.7.3
 #MapFig, Inc
+#Script Installer for PostgreSQL 9.5 on CentOS 7x64
+#Use only on fresh install!!!
 
 touch /root/auth.txt
 UNPRIV_USER='pgadmin'
@@ -129,6 +131,85 @@ host=
 EOF
 }
 
+function secure_iptables(){
+	#Set firewall rules
+	cat >/etc/sysconfig/iptables <<EOF
+# Generated
+*nat
+:PREROUTING ACCEPT [0:0]
+:POSTROUTING ACCEPT [0:0]
+:OUTPUT ACCEPT [0:0]
+COMMIT
+# Completed
+# Generated
+*mangle
+:PREROUTING ACCEPT [0:0]
+:INPUT ACCEPT [0:0]
+:FORWARD ACCEPT [0:0]
+:OUTPUT ACCEPT [0:0]
+:POSTROUTING ACCEPT [0:0]
+COMMIT
+# Completed
+# Generated
+*filter
+:FORWARD ACCEPT [0:0]
+:INPUT DROP [0:0]
+:OUTPUT ACCEPT [0:0]
+# Accept traffic from internal interfaces
+-A INPUT ! -i eth0 -j ACCEPT
+# Accept traffic with the ACK flag set
+-A INPUT -p tcp -m tcp --tcp-flags ACK ACK -j ACCEPT
+# Allow incoming data that is part of a connection we established
+-A INPUT -m state --state ESTABLISHED -j ACCEPT
+# Allow data that is related to existing connections
+-A INPUT -m state --state RELATED -j ACCEPT
+# Accept responses to DNS queries
+-A INPUT -p udp -m udp --dport 1024:65535 --sport 53 -j ACCEPT
+# Accept responses to our pings
+-A INPUT -p icmp -m icmp --icmp-type echo-reply -j ACCEPT
+# Accept notifications of unreachable hosts
+-A INPUT -p icmp -m icmp --icmp-type destination-unreachable -j ACCEPT
+# Accept notifications to reduce sending speed
+-A INPUT -p icmp -m icmp --icmp-type source-quench -j ACCEPT
+# Accept notifications of lost packets
+-A INPUT -p icmp -m icmp --icmp-type time-exceeded -j ACCEPT
+# Accept notifications of protocol problems
+-A INPUT -p icmp -m icmp --icmp-type parameter-problem -j ACCEPT
+# Allow connections to our SSH server
+-A INPUT -p tcp -m tcp --dport 3838 -j ACCEPT
+# Allow connections to our IDENT server
+-A INPUT -p tcp -m tcp --dport auth -j ACCEPT
+# Respond to pings
+-A INPUT -p icmp -m icmp --icmp-type echo-request -j ACCEPT
+# Allow DNS zone transfers
+-A INPUT -p tcp -m tcp --dport 53 -j ACCEPT
+# Allow DNS queries
+-A INPUT -p udp -m udp --dport 53 -j ACCEPT
+# Allow connections to webserver
+-A INPUT -p tcp -m tcp --dport 80 -j ACCEPT
+# Allow SSL connections to webserver
+-A INPUT -p tcp -m tcp --dport 443 -j ACCEPT
+# Allow connections to mail server
+-A INPUT -p tcp -m tcp -m multiport -j ACCEPT --dports 25,587
+# Allow connections to FTP server
+-A INPUT -p tcp -m tcp --dport 20:21 -j ACCEPT
+# Allow connections to POP3 server
+-A INPUT -p tcp -m tcp -m multiport -j ACCEPT --dports 110,995
+# Allow connections to IMAP server
+-A INPUT -p tcp -m tcp -m multiport -j ACCEPT --dports 143,220,993
+# Allow connections to Webmin
+-A INPUT -p tcp -m tcp --dport 10000:10010 -j ACCEPT
+# Allow connections to Usermin
+-A INPUT -p tcp -m tcp --dport 20000 -j ACCEPT
+# Postgres
+-A INPUT -p tcp -m tcp --dport 5432 -j ACCEPT
+# pgbouncer
+-A INPUT -p tcp -m tcp --dport 6432 -j ACCEPT
+COMMIT
+EOF
+	iptables-restore < /etc/sysconfig/iptables
+}
+
 function secure_ssh(){
 	if [ $(grep -m 1 -c ${UNPRIV_USER} /etc/passwd) -eq 0 ]; then
 		useradd -m ${UNPRIV_USER}
@@ -145,10 +226,31 @@ function secure_ssh(){
 	systemctl restart sshd
 }
 
+
+function kill_firewalld(){
+       systemctl stop firewalld
+       systemctl mask firewalld
+}
+
+function use_iptables(){
+       yum -y install iptables
+       yum -y install iptables-services
+       systemctl enable iptables
+       service iptables save
+       systemctl restart iptables
+}
+
+
+#You can comment out webmin if you dont want it
 install_postgresql;
 install_webmin;
+secure_iptables;
 secure_ssh;
+#Comment out following two lines if you will be setting up firewalld
+kill_firewalld;
+use_iptables;
 
+#throw in pgbouncer but dont start it
 yum -y install pgbouncer
 
 #change root password
