@@ -32,11 +32,16 @@ This script installs:
 
 - Webmin
 
+- IP Tables 
+
+
 The script also creates the following:
 
-- A minimally privilaged user (pgadmin)
+- A minimally privilaged user (pgadmin - change to whatever you like)
 
 - Disables root log in
+
+- Sets root, postgres, admin, and ssl pass to 32 chars.
 
 - Configures Webmin for managing PostgreSQL
 
@@ -50,10 +55,10 @@ The script also creates the following:
 
 - Once completed, it will display the new passwords for pgadmin, root, postgres, and ssl as well as write them to an auth.txt file.
 
-- This script does NOT install IP tables. For IP Tables, please use the CentOS 6 script  (https://github.com/brainfurnace/postgresql-9.5-script-centos-6x64) or install your own FirewallD or IPTables.
+- This script install IP tables. If you want to use firwalld, comment the appropriate lines as noted.IPTables.
 
 
-Example:
+Example Output at End of Script:
 
 Passwords saved in /root/auth.txt
 
