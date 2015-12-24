@@ -55,7 +55,15 @@ The script also creates the following:
 
 - Once completed, it will display the new passwords for pgadmin, root, postgres, and ssl as well as write them to an auth.txt file.
 
-- This script install IP tables. If you want to use firwalld, comment the appropriate lines as noted.IPTables.
+- This script install IP tables. If you want to use firwalld, comment the appropriate lines as noted.
+
+
+Usage: 
+
+1. Download the script to a clean CentOS 7.x64 box
+2. Make it executable <code> chmod 755 pgsql-9.5-centos-7x-64.sh</code>
+3. Execute it <code>./pgsql-9.5-centos-7x-64.sh</code>
+
 
 
 Example Output at End of Script:
